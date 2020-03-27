@@ -1,9 +1,9 @@
-package com.iyb.retry;
+package com.iyb.retry.bean;
 
 import java.util.Date;
 
 /**
- * TODO
+ * RetryResult
  *
  * @author 2020/3/25 15:28 created by iyb-wangyanbing
  * @version 1.0.0
@@ -131,6 +131,42 @@ public class RetryResult {
         public RetryResult build() {
             return new RetryResult(this);
         }
+    }
+
+    public Long getId() {
+        return id;
+    }
+
+    public String getRequestId() {
+        return requestId;
+    }
+
+    public String getClazz() {
+        return clazz;
+    }
+
+    public String getMethod() {
+        return method;
+    }
+
+    public String getStatus() {
+        return status;
+    }
+
+    public int getRetryTimes() {
+        return retryTimes;
+    }
+
+    public String getErrorMsg() {
+        return errorMsg;
+    }
+
+    public String getResult() {
+        return result;
+    }
+
+    public Date getGmtCreated() {
+        return gmtCreated;
     }
 
     @Override

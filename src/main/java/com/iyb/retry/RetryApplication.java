@@ -4,15 +4,23 @@ import com.fasterxml.jackson.databind.DeserializationFeature;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import org.springframework.boot.SpringApplication;
 import org.springframework.boot.autoconfigure.SpringBootApplication;
+import org.springframework.cloud.openfeign.EnableFeignClients;
 import org.springframework.context.annotation.Bean;
 import org.springframework.http.MediaType;
 import org.springframework.http.converter.json.MappingJackson2HttpMessageConverter;
+import org.springframework.scheduling.annotation.EnableAsync;
+import org.springframework.scheduling.concurrent.ThreadPoolTaskExecutor;
 import org.springframework.web.client.RestTemplate;
 
 import java.text.SimpleDateFormat;
 import java.util.ArrayList;
 import java.util.List;
+import java.util.concurrent.Executor;
+import java.util.concurrent.RejectedExecutionHandler;
+import java.util.concurrent.ThreadPoolExecutor;
 
+@EnableAsync
+@EnableFeignClients
 @SpringBootApplication
 public class RetryApplication {
 
@@ -40,5 +48,17 @@ public class RetryApplication {
         mediaTypes.add(MediaType.APPLICATION_JSON_UTF8);
         jsonConverter.setSupportedMediaTypes(mediaTypes);
         return jsonConverter;
+    }
+
+    @Bean
+    public Executor asyncExecutors() {
+        ThreadPoolTaskExecutor executor = new ThreadPoolTaskExecutor();
+        executor.setCorePoolSize(5);
+        executor.setMaxPoolSize(30);
+        executor.setQueueCapacity(100);
+        executor.setKeepAliveSeconds(120);
+        executor.setRejectedExecutionHandler(new ThreadPoolExecutor.CallerRunsPolicy());
+        executor.initialize();
+        return executor;
     }
 }

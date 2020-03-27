@@ -1,9 +1,12 @@
 package com.iyb.retry.annotation;
 
+import com.iyb.retry.enums.BackOffPolicyEnum;
+import com.iyb.retry.enums.RetryPolicyEnum;
+
 import java.lang.annotation.*;
 
 /**
- * TODO
+ * RetryStrategy
  *
  * @author 2020/3/25 12:23 created by iyb-wangyanbing
  * @version 1.0.0
@@ -15,26 +18,28 @@ import java.lang.annotation.*;
 public @interface RetryStrategy {
 
     /**
-     * 捕获此类异常
      * @return Throwable
      */
     Class<? extends Throwable> value() default RuntimeException.class;
 
     /**
      * 最大重试次数
+     *
      * @return maxAttempts
      */
     int maxAttempts() default 3;
 
+    BackOff backoff() default @BackOff();
+
     /**
-     *
-     * @return
+     * @see com.iyb.retry.RetryListener
+     * @return .
      */
-    int timeoutMillis() default 1000;
+    String[] listener() default {};
 
+    String mailTo() default "wangyanbin@iyunbao.com";
 
-    int multiply() default 1;
+    RetryPolicyEnum retryPolicy() default RetryPolicyEnum.MAX_ATTEMPTS;
 
-
-    String mailTo() default "caojianxiang@iyunbao.com";
+    BackOffPolicyEnum backOffPolicy() default BackOffPolicyEnum.FIXED;
 }

@@ -21,9 +21,6 @@ public interface RetryPolicy extends Serializable {
 
     /**
      * 获取重试上下文（相关参数）
-     *
-     * @param parent 嵌套的父级重试上下文 TODO 支持嵌套重试
-     * @return a {@link RetryContext} object specific to this policy.
      */
     RetryContext open(RetryContext parent);
 
