@@ -83,7 +83,7 @@ public class RetryTemplateBuilder {
         }
         retryTemplate.setBackOffPolicy(this.backOffPolicy);
 
-        retryTemplate.setContext(this.originRetryContext);
+        RetryContextManager.register(this.originRetryContext);
         return retryTemplate;
     }
 

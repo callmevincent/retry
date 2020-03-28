@@ -27,8 +27,6 @@ public class RetryTemplate implements RetryOperations {
 
     private boolean throwLastExceptionOnExhausted;
 
-    private RetryContext retryContext;
-
     public RetryTemplate() {
     }
 
@@ -48,10 +46,6 @@ public class RetryTemplate implements RetryOperations {
         return doExecute(retryCallback);
     }
 
-    public RetryContext getContext() {
-        return retryContext;
-    }
-
     /**
      * @param retryCallback
      * @param <T>
@@ -63,7 +57,8 @@ public class RetryTemplate implements RetryOperations {
     protected <T, E extends Throwable> T doExecute(RetryCallback<T, E> retryCallback) throws E, ExhaustedRetryException {
         RetryPolicy retryPolicy = this.retryPolicy;
         BackOffPolicy backOffPolicy = this.backOffPolicy;
-        RetryContext context = retryPolicy.open(retryContext);
+        RetryContext context = retryPolicy.open(RetryContextManager.getContext());
+        RetryContextManager.register(context);
         Throwable lastException = null;
         boolean exhausted = false;
         try {
@@ -83,7 +78,7 @@ public class RetryTemplate implements RetryOperations {
                         throw new TerminatedRetryException("重试操作终止。注册重试中出现的异常（用于后续分析）失败 {}", ex);
                     }
                     if (canRetry(retryPolicy, context) && !context.isExhaustedOnly()) {
-                        logger.info("************ call backOff **************");
+//                        logger.info("************ call backOff **************");
                         try {
                             backOffPolicy.backOff(backOffContext);
                         } catch (BackOffInterruptedException ex) {
@@ -119,11 +114,9 @@ public class RetryTemplate implements RetryOperations {
      * @param succeeded
      */
     protected void close(RetryPolicy retryPolicy, RetryContext context, boolean succeeded) {
-        this.retryContext = context;
         //succeed == 重试次数耗尽或无异常
         if (succeeded) {
             context.setRetryStatus(RetryStatusEnum.COMPLETE);
-            this.retryContext.setRetryStatus(RetryStatusEnum.COMPLETE);
             retryPolicy.close(context);
         }
     }
@@ -192,13 +185,5 @@ public class RetryTemplate implements RetryOperations {
 
     public void setBackOffPolicy(BackOffPolicy backOffPolicy) {
         this.backOffPolicy = backOffPolicy;
-    }
-
-    /**
-     * 装配原始retryContext
-     * @param originRetryContext 原始retryContext
-     */
-    public void setContext(RetryContext originRetryContext) {
-        this.retryContext = originRetryContext;
     }
 }

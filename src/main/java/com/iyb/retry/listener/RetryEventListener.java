@@ -1,14 +1,13 @@
 package com.iyb.retry.listener;
 
 import com.alibaba.fastjson.JSONObject;
-import com.iyb.retry.RetryCallback;
 import com.iyb.retry.RetryContext;
 import com.iyb.retry.RetryException;
 import com.iyb.retry.bean.RetryResult;
 import com.iyb.retry.dao.RetryResultDao;
 import com.iyb.retry.service.HalleyFeign;
+import com.iyb.retry.support.RetryContextManager;
 import com.iyb.retry.support.RetryTemplate;
-import com.iyb.retry.support.RetryTemplateBuilder;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -39,32 +38,28 @@ public class RetryEventListener {
      *
      * @param originRetryContext retryContext
      */
-    @EventListener(condition = "#originRetryContext != null ")
     @Async
+    @EventListener(condition = "#originRetryContext != null ")
     public void retryEventListener(RetryContext originRetryContext) {
         Object result = null;
         RetryTemplate retryTemplate = RetryTemplate.defaultInstance(originRetryContext);
+        Throwable th = null;
         try {
-            result = retryTemplate.execute(new RetryCallback<Object, Throwable>() {
-                /**
-                 * @param context 重试上下文
-                 * @return 重试结果
-                 * @throws Throwable 重试异常
-                 */
-                @Override
-                public Object doWithRetry(RetryContext context) throws Throwable {
-                    log.info(context.getRetryConfiguration().getArgsString());
-                    return context.getRetryConfiguration().getPoint().proceed();
-                }
+            result = retryTemplate.execute(context -> {
+                log.info(context.getRetryConfiguration().getArgsString());
+                return context.getRetryConfiguration().getPoint().proceed();
             });
         } catch (RetryException e) {
             log.warn("执行重试操作异常 {}", e.getMessage(), e);
-            sendMail(retryTemplate.getContext(), e);
+            th = e;
         } catch (Throwable throwable) {
             log.error("处理重试事件出错 {}", throwable.getMessage(), throwable);
-            sendMail(retryTemplate.getContext(), throwable);
+            th = throwable;
+        } finally {
+            sendMail(RetryContextManager.getContext(), th);
+            saveRetryResult(RetryContextManager.getContext().getRetryResult(result));
+            RetryContextManager.clear();
         }
-        saveRetryResult(retryTemplate.getContext().getRetryResult(result));
     }
 
     private String getDetailStackTrace(Throwable e) {
@@ -78,8 +73,14 @@ public class RetryEventListener {
 
     private void sendMail(RetryContext retryContext, Throwable e) {
         try {
+            if (retryContext.getLastThrowable() != null) {
+                e = retryContext.getLastThrowable();
+            } else if (e == null) {
+                return;
+            }
             JSONObject mailParams = retryContext.buildMailParams(e.getMessage(), getDetailStackTrace(e));
-            JSONObject response = halleyFeign.sendMail(mailParams);
+//            log.info("sending email... {} ", mailParams);
+            halleyFeign.sendMail(mailParams);
         } catch (Throwable throwable) {
             log.warn("重试失败后，发送邮件通知失败 {}", throwable.getMessage(), throwable);
         }
@@ -87,6 +88,7 @@ public class RetryEventListener {
 
     private void saveRetryResult(RetryResult retryResult) {
         try {
+//            log.info("saving result... {}", JSONObject.toJSONString(retryResult));
             Assert.isTrue(retryResultDao.insert(retryResult) == 1, "插入数据出错") ;
         } catch (Exception e) {
             log.error("保存重试结果出错 {}", e.getMessage(), e);

@@ -13,8 +13,8 @@ import java.util.Objects;
  * @author iyb-wangyanbing
  */
 public class RetryConfiguration {
-    private ProceedingJoinPoint point;
-    private RetryStrategy retryStrategy;
+    private transient ProceedingJoinPoint point;
+    private transient RetryStrategy retryStrategy;
     private int maxAttempts;
     private String mailTo;
     private String argsString;
