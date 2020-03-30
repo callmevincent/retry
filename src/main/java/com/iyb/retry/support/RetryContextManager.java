@@ -2,6 +2,13 @@ package com.iyb.retry.support;
 
 import com.iyb.retry.RetryContext;
 
+/**
+ * RetryContextManager
+ *
+ * @author 2020/3/30 10:43 created by iyb-wangyanbing
+ * @version 1.0.0
+ * @modifier:
+ */
 public final class RetryContextManager {
 	private static final ThreadLocal<RetryContext> CONTEXT_THREAD_LOCAL = new ThreadLocal<>();
 
